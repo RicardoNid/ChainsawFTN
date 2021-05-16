@@ -1,12 +1,11 @@
+package SM4GCM
+
+import Chainsaw._
 import spinal.core._
-import spinal.core.sim._
-import spinal.sim._
 import spinal.lib._
 import spinal.lib.fsm._
-import Chainsaw.Real
-import Chainsaw._
 
-/** @see [[http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A SM4 standard]]
+/** @see [[http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A SM4.SM4 standard]]
  * @see  [[https://aks.jd.com/tools/sec/ crypto online-judge]]
  */
 class SM4 extends Component with Testable {

@@ -1,7 +1,7 @@
-
+package SM4GCM
 
 /** @see [[https://www.javainterviewpoint.com/java-aes-256-gcm-encryption-and-decryption/ AES-GCM]]
- * @see  [[https://www.notion.so/SM4-GCM-ef1d26d30f524121b7e0ddd9c9d91ca8 SM4-GCM]]
+ * @see  [[https://www.notion.so/SM4-GCM-ef1d26d30f524121b7e0ddd9c9d91ca8 SM4.SM4-GCM]]
  */
 object AESGCM {
   val plainText = "This is a plain text which need to be encrypted by Java AES 256 GCM Encryption Algorithm"
@@ -30,8 +30,8 @@ object AESGCM {
     System.out.println("DeCrypted Text : " + decryptedText)
   }
 
-  import javax.crypto.{Cipher, SecretKey}
   import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
+  import javax.crypto.{Cipher, SecretKey}
 
   @throws[Exception]
   def encrypt(plaintext: Array[Byte], key: SecretKey, IV: Array[Byte]) = { // Get Cipher Instance
@@ -47,8 +47,8 @@ object AESGCM {
     cipherText
   }
 
-  import javax.crypto.{Cipher, SecretKey}
   import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
+  import javax.crypto.{Cipher, SecretKey}
 
   @throws[Exception]
   def decrypt(cipherText: Array[Byte], key: SecretKey, IV: Array[Byte]) = { // Get Cipher Instance
