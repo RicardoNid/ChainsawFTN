@@ -5,7 +5,7 @@ import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
 
-/** @see [[http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A SM4.SM4 standard]]
+/** @see [[http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A SM4GCM.SM4.SM4GCM.SM4 standard]]
  * @see  [[https://aks.jd.com/tools/sec/ crypto online-judge]]
  */
 class SM4 extends Component with Testable {
