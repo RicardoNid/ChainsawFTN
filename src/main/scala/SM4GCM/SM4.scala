@@ -5,11 +5,20 @@ import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
 
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.sim._
+import spinal.lib.fsm._
+
+import Chainsaw._
+import Chainsaw.Real
+
 /** @see [[http://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=7803DE42D3BC5E80B0C3E5D8E873D56A SM4GCM.SM4.SM4GCM.SM4 standard]]
  * @see  [[https://aks.jd.com/tools/sec/ crypto online-judge]]
  */
-class SM4 extends Component with Testable {
-
+class SM4 extends Component  with DSPDUTTiming[Vec[Bits], Bits]{
+0
   // F(X0,X1,X2,X3,rk)=X0⊕T(X1⊕X2⊕X3⊕rk)
   // input =
   def FModule(input: Seq[Bits]) = {
@@ -73,9 +82,9 @@ class SM4 extends Component with Testable {
     input.head ^ TPrimeModule(input.drop(1).reduce(_ ^ _))
   }
 
-  val input = slave Flow Vec(Bits(128 bits), 2)
-  val plaintext = input.payload(0)
-  val secretKey = input.payload(1)
+  val input: Vec[Bits] = in Vec(Bits(128 bits), 2)
+  val plaintext = input(0)
+  val secretKey = input(1)
   val counter = Counter(0, 31)
 
   // cki,j=(4i+j)×7(mod256)
@@ -100,19 +109,12 @@ class SM4 extends Component with Testable {
 
   val textNext: Bits = FModule(textSrl :+ keyNext)
 
-  val output = master Flow Bits(128 bits)
-  output.payload := textSrl.reverse.asBits()
-  output.valid := False
+  val output: Bits = out(textSrl.reverse.asBits())
+
 
   val fsm = new StateMachine {
-    val IDLE = StateEntryPoint()
-    val INIT = State()
+    val INIT = StateEntryPoint()
     val RUN = new StateDelay(32)
-
-    IDLE
-      .whenIsActive {
-        when(input.valid)(goto(INIT))
-      }
 
     INIT
       .whenIsActive {
@@ -123,9 +125,7 @@ class SM4 extends Component with Testable {
 
     RUN
       .whenCompleted {
-        when(input.valid)(goto(INIT))
-          .otherwise(goto(IDLE))
-        output.valid := True
+        goto(INIT)
       }
       .whenIsActive {
         counter.increment()
@@ -135,5 +135,5 @@ class SM4 extends Component with Testable {
         textSrl.dropRight(1).zip(textSrl.drop(1)).foreach { case (prev, next) => prev := next }
       }
   }
-  override val getTimingInfo: TimingInfo = TimingInfo(1, 1, 33, 33)
+  override val timing: TimingInfo = TimingInfo(inputInterval = 1, outputInterval = 1, latency = 33, initiationInterval = 33)
 }
