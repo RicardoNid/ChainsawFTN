@@ -12,8 +12,7 @@ class WallaceTree extends Copyable[WallaceTree] {
   private val newTree = Chain[WallaceNode] //WallaceTree的新枝
 
   private def extend(): Unit = { //将树延长一格
-    Tree.add(Chain[WallaceNode])
-    Tree(Tree.length - 1).add(newTree.copy())
+    Tree.add(newTree.copy())
   }
 
   private def extend(n: Int): WallaceTree = { //将树延长到一定长度
@@ -23,31 +22,20 @@ class WallaceTree extends Copyable[WallaceTree] {
     this
   }
 
-  def insert(input: Bits, offset: Int): WallaceTree = insert(input, offset, null)
-
   def insert(input: Bits /*插入的信号*/ ,
-             offset: Int /*插入偏移量*/ ,
-             byd: Bool /*超出部分的信号，用于处理负数，null表示False*/):
+             offset: Int /*插入偏移量*/):
   WallaceTree = { //插入信号
     val w = offset + input.getWidth
     extend(w)
     for (i <- offset until w) {
       Tree(i).add(WallaceNode(input(i - offset)))
     }
-    if (byd != null) {
-      for (i <- w until Tree.length) {
-        Tree(i).add(WallaceNode(byd))
-      }
-      newTree.add(WallaceNode(byd))
-    }
     this
   }
 
-  def insert(input: BigInt, offset: Int): WallaceTree = insert(input, offset, null)
-
   def insert(input: BigInt /*插入的数字*/ ,
              offset: Int /*插入偏移量*/ ,
-             ctrl: Bool /*控制信号，null代表没有*/):
+             ctrl: Bool = null /*控制信号，null代表没有*/):
   WallaceTree = { //插入常数
     val isNeg = input < 0
     val w = if (isNeg) offset + log2Up(-input) else offset + log2Up(input + 1)
@@ -140,11 +128,11 @@ class WallaceTree extends Copyable[WallaceTree] {
   }
 
   private def full_simplify(n: Int): Unit = {
-    if (Tree(n).length == 3) {
+    if (Tree(n).length > 2) {
       val (s_out, c_out) = Full(Tree(n)(0), Tree(n)(1), Tree(n)(2))
       Tree(n).replace(s_out)
       Tree(n + 1).add(c_out)
-    } else if (Tree(n).length == 2) {
+    } else if (Tree(n).length > 1) {
       val (s_out, c_out) = Half(Tree(n)(0), Tree(n)(1))
       Tree(n).replace(s_out)
       Tree(n + 1).add(c_out)
@@ -199,6 +187,19 @@ class WallaceTree extends Copyable[WallaceTree] {
     for (i <- Start until end) {
       full_simplify(i)
     }
+    for (i <- end until Tree.length - 1) { //完全化简后可能不符合部分化简条件，需要重新化简
+      if (Tree(i).length > 2) {
+        val (s_out, c_out) = Full(Tree(i)(0), Tree(i)(1), Tree(i)(2))
+        Tree(i).replace(s_out)
+        Tree(i + 1).add(c_out)
+      }
+    }
+    while (Tree(Tree.length - 1).length > 2) {
+      extend()
+      val (s_out, c_out) = Full(Tree(Tree.length - 2)(0), Tree(Tree.length - 2)(1), Tree(Tree.length - 2)(2))
+      Tree(Tree.length - 2).replace(s_out)
+      Tree(Tree.length - 1).add(c_out)
+    }
     this
   }
 
@@ -235,14 +236,81 @@ class WallaceTree extends Copyable[WallaceTree] {
     this
   }
 
-  def add(input: WallaceTree): WallaceTree = { //拼接两个WallaceTree以达到将两个系统相加的效果
+  def add(input: UInt): WallaceTree = add(input, 0)
+
+  def add(input: UInt, offset: Int): WallaceTree = { //加上一个UInt
+    extend(offset + input.getWidth)
+    for (i <- offset until offset + input.getWidth) {
+      Tree(i).add(WallaceNode(input(i - offset)))
+    }
+    this
+  }
+
+  def sub(input: UInt): WallaceTree = sub(input, 0)
+
+  def sub(input: UInt, offset: Int): WallaceTree = { //减去一个UInt
+    extend(offset + input.getWidth)
+    for (i <- offset until offset + input.getWidth) {
+      Tree(i).add(WallaceNode(!input(i - offset)))
+    }
+    extend(offset + 1)
+    Tree(offset).add(WallaceNode(True))
+    for (i <- offset + input.getWidth until Tree.length) {
+      Tree(i).add(WallaceNode(True))
+    }
+    newTree.add(WallaceNode(True))
+    this
+  }
+
+  def add(input: SInt): WallaceTree = add(input, 0)
+
+  def add(input: SInt, offset: Int): WallaceTree = { //加上一个UInt
+    extend(offset + input.getWidth)
+    for (i <- offset until offset + input.getWidth) {
+      Tree(i).add(WallaceNode(input(i - offset)))
+    }
+    if (input.getWidth != 0) {
+      for (i <- offset + input.getWidth until Tree.length) {
+        Tree(i).add(WallaceNode(input.msb))
+      }
+      newTree.add(WallaceNode(input.msb))
+    }
+    this
+  }
+
+  def sub(input: SInt): WallaceTree = sub(input, 0)
+
+  def sub(input: SInt, offset: Int): WallaceTree = { //减去一个UInt
+    extend(offset + input.getWidth)
+    for (i <- offset until offset + input.getWidth) {
+      Tree(i).add(WallaceNode(!input(i - offset)))
+    }
+    extend(offset + 1)
+    Tree(offset).add(WallaceNode(True))
+    if (input.getWidth != 0) {
+      for (i <- offset + input.getWidth until Tree.length) {
+        Tree(i).add(WallaceNode(!input.msb))
+      }
+      newTree.add(WallaceNode(!input.msb))
+    } else {
+      for (i <- offset + input.getWidth until Tree.length) {
+        Tree(i).add(WallaceNode(True))
+      }
+      newTree.add(WallaceNode(True))
+    }
+    this
+  }
+
+  def add(input: WallaceTree): WallaceTree = add(input, 0)
+
+  def add(input: WallaceTree, offset: Int): WallaceTree = { //拼接两个WallaceTree以达到将两个系统相加的效果
     //使用这个函数之前要先对两个WallaceTree进行部分化简
     if (input != null) {
-      extend(input.Tree.length)
-      for (i <- 0 until input.Tree.length) {
-        Tree(i).add(input.Tree(i).copy())
+      extend(offset + input.Tree.length)
+      for (i <- offset until offset + input.Tree.length) {
+        Tree(i).add(input.Tree(i - offset).copy())
       }
-      for (i <- input.Tree.length until Tree.length) {
+      for (i <- offset + input.Tree.length until Tree.length) {
         Tree(i).add(input.newTree.copy())
       }
       newTree.add(input.newTree.copy())
@@ -250,22 +318,24 @@ class WallaceTree extends Copyable[WallaceTree] {
     this
   }
 
-  def sub(input: WallaceTree): WallaceTree = { //拼接两个WallaceTree以达到将两个系统相减的效果
+  def sub(input: WallaceTree): WallaceTree = sub(input, 0)
+
+  def sub(input: WallaceTree, offset: Int): WallaceTree = { //拼接两个WallaceTree以达到将两个系统相减的效果
     //使用这个函数之前要先对两个WallaceTree进行部分化简
     if (input != null) {
-      extend(input.Tree.length)
+      extend(offset + input.Tree.length)
       var idx = 0
       while (idx < input.Tree.length && input.Tree(idx).length < 2) {
         idx = idx + 1
       }
       val is2num = idx != input.Tree.length
       if (is2num) {
-        for (i <- 0 until input.Tree.length) {
-          if (input.Tree(i).length == 2) {
-            Tree(i).add(!input.Tree(i)(0))
-            Tree(i).add(!input.Tree(i)(1))
-          } else if (input.Tree(i).length == 1) {
-            Tree(i).add(!input.Tree(i)(0))
+        for (i <- offset until offset + input.Tree.length) {
+          if (input.Tree(i - offset).length == 2) {
+            Tree(i).add(!input.Tree(i - offset)(0))
+            Tree(i).add(!input.Tree(i - offset)(1))
+          } else if (input.Tree(i - offset).length == 1) {
+            Tree(i).add(!input.Tree(i - offset)(0))
             Tree(i).add(WallaceNode(True))
           } else {
             Tree(i).add(WallaceNode(True))
@@ -273,43 +343,43 @@ class WallaceTree extends Copyable[WallaceTree] {
           }
         }
         if (input.newTree.length == 1) {
-          for (i <- input.Tree.length until Tree.length) {
+          for (i <- offset + input.Tree.length until Tree.length) {
             Tree(i).add(!input.newTree(0))
             Tree(i).add(WallaceNode(True))
           }
           newTree.add(!input.newTree(0))
           newTree.add(WallaceNode(True))
         } else {
-          for (i <- input.Tree.length until Tree.length) {
+          for (i <- offset + input.Tree.length until Tree.length) {
             Tree(i).add(WallaceNode(True))
             Tree(i).add(WallaceNode(True))
           }
           newTree.add(WallaceNode(True))
           newTree.add(WallaceNode(True))
         }
-        extend(2)
-        Tree(1).add(WallaceNode(True))
+        extend(offset + 2)
+        Tree(offset + 1).add(WallaceNode(True))
       } else {
-        for (i <- 0 until input.Tree.length) {
-          if (input.Tree(i).length == 1) {
-            Tree(i).add(!input.Tree(i)(0))
+        for (i <- offset until offset + input.Tree.length) {
+          if (input.Tree(i - offset).length == 1) {
+            Tree(i).add(!input.Tree(i - offset)(0))
           } else {
             Tree(i).add(WallaceNode(True))
           }
         }
         if (input.newTree.length == 1) {
-          for (i <- input.Tree.length until Tree.length) {
+          for (i <- offset + input.Tree.length until Tree.length) {
             Tree(i).add(!input.newTree(0))
           }
           newTree.add(!input.newTree(0))
         } else {
-          for (i <- input.Tree.length until Tree.length) {
+          for (i <- offset + input.Tree.length until Tree.length) {
             Tree(i).add(WallaceNode(True))
           }
           newTree.add(WallaceNode(True))
         }
-        extend(1)
-        Tree(0).add(WallaceNode(True))
+        extend(offset + 1)
+        Tree(offset).add(WallaceNode(True))
       }
     }
     this

@@ -1,3 +1,5 @@
+package NTT
+
 import spinal.core._
 
 object WallaceNode {

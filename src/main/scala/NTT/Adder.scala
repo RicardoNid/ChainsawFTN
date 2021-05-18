@@ -1,4 +1,4 @@
-
+package NTT
 
 object Adder { //输入为WallaceNode的全加器和半加器
   def Full(a_in: WallaceNode, b_in: WallaceNode, c_in: WallaceNode):

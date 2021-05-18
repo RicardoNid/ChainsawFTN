@@ -1,3 +1,5 @@
+package NTT
+
 import spinal.core._
 import spinal.lib._
 import spinal.core.sim._
