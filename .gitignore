@@ -39,3 +39,4 @@ bin/
 simWorkspace/
 tmp/
 null
+/.run/Template Application.run.xml
