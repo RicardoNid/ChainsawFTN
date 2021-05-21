@@ -7,11 +7,11 @@ import spinal.sim._
 import Chainsaw.Real
 import Chainsaw._
 import breeze.numerics.pow
-import FTN.Convenc.trellisGen
+import FTN.ConvencOld.trellisGen
 import scala.util.Random
 
 
-class Convenc extends Component {
+class ConvencOld extends Component {
   val io = new Bundle {
     //val tocode = in Bits (1 bits)
     //val coded = out Bits (2 bits)
@@ -76,7 +76,7 @@ class Convenc extends Component {
 
 
 
-object Convenc{
+object ConvencOld{
 
   def trellisGen(codgen: String) = {
     val out = (0 until codgen.length).map(i => (codgen(i) - '0') * pow(8, codgen.length - 1 - i)).sum
@@ -86,7 +86,7 @@ object Convenc{
 
     //SpinalVerilog(new convenc)
     //println(trellisGen("133"))
-    SimConfig.withWave.compile(new Convenc).doSim{ dut =>
+    SimConfig.withWave.compile(new ConvencOld).doSim{ dut =>
       dut.clockDomain.forkStimulus(period = 10)
 
       dut.clockDomain.assertReset()
