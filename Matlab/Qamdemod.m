@@ -13,10 +13,14 @@ function bits = Qamdemod(bitAllocated, QAMSymbols)
     else
         QAMSymbols = QAMSymbols / rms(QAMSymbols) * RmsAlloc(bitAllocated);
         % QAMSymbols = QAMSymbols * RmsAlloc(bitAllocated);
-        M = 2^bitAllocated;
-        modObj = modem.qammod('M', M, 'SymbolOrder', 'Gray', 'InputType', 'Bit');
-        demodObj = modem.qamdemod(modObj);
-        set(demodObj, 'DecisionType', 'Hard decision');
-        bits = demodulate(demodObj, QAMSymbols);
+
+        % R2016a
+        % M = 2^bitAllocated;
+        % modObj = modem.qammod('M', M, 'SymbolOrder', 'Gray', 'InputType', 'Bit');
+        % demodObj = modem.qamdemod(modObj);
+        % set(demodObj, 'DecisionType', 'Hard decision');
+        % bits = demodulate(demodObj, QAMSymbols);
+
+        bits = qamdemod(QAMSymbols, 2^bitAllocated, 'gray', 'OutputType', 'bit');
         bits = bits';
     end
